@@ -2,7 +2,7 @@ import numpy as np
 import cv2
 from parameters import *  # Variables importing
 import tensorflow as tf
-
+from deepface import DeepFace
 
 def model_info_display(frame, face_name, model_name):
     # Display model info
@@ -25,7 +25,7 @@ def most_frequent(list):
 
 def face_img(img,face):
     (x,y,w,h) = face
-    res = img[y + 5:y + h - 5, x + 20:x + w - 20]
+    res = img[y + 5:y + h - 5, x + 20:x + w - 20]   # WHY +5 and +20 ???
     res = cv2.resize(res, (48, 48))
 
     return res
@@ -57,10 +57,20 @@ def draw_rect(frame, face, color,thickness):
     cv2.rectangle(frame, (x, y), (x + w, y + h), color, thickness)
 
 def emotion_detection(face_grey, model, labels):
-    if face_grey.max()>1:
+    if face_grey.max() > 1:
         face_grey = face_grey / 255.0
 
     predictions = model.predict(np.array([face_grey.reshape((48, 48, 1))])).argmax()
+    emotion = labels[predictions]
+    return emotion
+
+
+def emotion_detection_deepeface(face_grey, model, labels):
+    if face_grey.max() > 1:
+        face_grey = face_grey / 255.0
+
+    reshaped_face = face_grey.reshape(1, 48, 48, 1)
+    predictions = model.predict(reshaped_face).argmax()
     emotion = labels[predictions]
     return emotion
 
@@ -70,7 +80,7 @@ def display_emotion(img, emotion, face, color, font, font_color):
     cv2.putText(img, emotion, (x + 10, y + 15), font, 0.5, font_color, 2, cv2.LINE_AA)
 
 cam = cv2.VideoCapture(0, cv2.CAP_DSHOW)
-# Set Camera Resolution
+# Set Camera Resolutionw
 cam.set(cv2.CAP_PROP_FRAME_WIDTH, res_cam_width)
 cam.set(cv2.CAP_PROP_FRAME_HEIGHT, res_cam_height)
 
@@ -81,21 +91,24 @@ cv2.setWindowProperty('Emotion Detection', cv2.WND_PROP_FULLSCREEN, cv2.WINDOW_F
 # Face detection settings
 face_model1 = 'haar_cascade_face_detection.xml'
 face_model2 = 'haarcascade_frontalface_default.xml'
+face_model2 = face_model1
 face_detection1 = cv2.CascadeClassifier(face_model1)
 face_detection2 = cv2.CascadeClassifier(face_model2)
 
 settings = {
     'scaleFactor': 1.3,
     'minNeighbors': 5,
-    'minSize': (400, 400)
+    'minSize': (100, 100)
 }
 labels1 = ['Surprise', 'Neutral', 'Anger', 'Happy', 'Sad']
 labels2 = ['Angry', 'Happy', 'Neutral', 'Sad', 'Surprise']
+labels3 = ['angry', 'disgust', 'fear', 'happy', 'sad', 'surprise', 'neutral']
 
 Keras_model1 = 'network-5Labels.h5'
 Keras_model2 = 'Emotion_little_vgg.h5'
 model1 = tf.keras.models.load_model(Keras_model1)
 model2 = tf.keras.models.load_model(Keras_model2)
+model2 = DeepFace.build_model("Emotion")
 
 
 emotions1 = []
@@ -134,25 +147,41 @@ while True:
         face_display = cv2.resize(face_display,(150,150))
         img1[img1.shape[0]-int(face_display.shape[0]):, 0:int(face_display.shape[1])] = face_display
 
-    # ---- FACE DETECTION WITH MODEL 2 ----
+    # # ---- FACE DETECTION WITH MODEL 2 ----
+    # img2 = cropped.copy()
+    # # Display model info
+    # model_info_display(img2, face_model2, model_name='Keras ' + Keras_model2)
+    #
+    # # Face & Emotion detection
+    # face = face_detection(frame=img2,face_detection=face_detection2,face_settings=settings)
+    # if face.size != 0:
+    #     face_grey=face_img(img=grey,face=face)
+    #     emotion = emotion_detection(face_grey=face_grey, model=model2, labels=labels2)
+    #     draw_rect(frame=img2,face=face,color=color,thickness=2)
+    #     display_emotion(img2,emotion=emotion,face=face,color=color,font=font,font_color=font_color)
+    #
+    #     # Display grey face on bottom left
+    #     face_display = cv2.cvtColor(face_grey, cv2.COLOR_GRAY2BGR)
+    #     face_display = cv2.resize(face_display,(150,150))
+    #     img2[img2.shape[0]-int(face_display.shape[0]):, 0:int(face_display.shape[1])] = face_display
+
+    # ---- FACE DETECTION WITH DEEPFACE ----
     img2 = cropped.copy()
     # Display model info
-    model_info_display(img2, face_model2, model_name='Keras ' + Keras_model2)
+    model_info_display(img2, face_model2, model_name='Deepface')
 
     # Face & Emotion detection
-    face = face_detection(frame=img2,face_detection=face_detection2,face_settings=settings)
+    face = face_detection(frame=img2, face_detection=face_detection2, face_settings=settings)
     if face.size != 0:
-        face_grey=face_img(img=grey,face=face)
-        emotion = emotion_detection(face_grey=face_grey, model=model2, labels=labels2)
-        draw_rect(frame=img2,face=face,color=color,thickness=2)
-        display_emotion(img2,emotion=emotion,face=face,color=color,font=font,font_color=font_color)
+        face_grey = face_img(img=grey, face=face)
+        emotion = emotion_detection_deepeface(face_grey=face_grey, model=model2, labels=labels3)
+        draw_rect(frame=img2, face=face, color=color, thickness=2)
+        display_emotion(img2, emotion=emotion, face=face, color=color, font=font, font_color=font_color)
 
         # Display grey face on bottom left
         face_display = cv2.cvtColor(face_grey, cv2.COLOR_GRAY2BGR)
-        face_display = cv2.resize(face_display,(150,150))
-        img2[img2.shape[0]-int(face_display.shape[0]):, 0:int(face_display.shape[1])] = face_display
-
-
+        face_display = cv2.resize(face_display, (150, 150))
+        img2[img2.shape[0] - int(face_display.shape[0]):, 0:int(face_display.shape[1])] = face_display
 
     # Create two empty canvas
     background1 = np.zeros((window_height // 2, window_width, 3), dtype=np.uint8)
