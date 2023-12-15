@@ -108,11 +108,8 @@ model1 = tf.keras.models.load_model(Keras_model1)
 model2 = tf.keras.models.load_model(Keras_model2)
 model2 = DeepFace.build_model("Emotion")
 
-max_emo = 10
 emotions1 = ['Neutral']*max_emo
 emotions2 = []
-final_emotion =''
-final_emotion1 =''
 
 font = cv2.FONT_HERSHEY_SIMPLEX
 color = (245, 135, 66)
@@ -161,13 +158,10 @@ while True:
         face_grey = face_img(img=grey, face=face)
         emotion = emotion_detection_deepeface(face_grey=face_grey, model=model2, labels=labels3)
         draw_rect(frame=img2, face=face, color=color, thickness=2)
-        emotions2.append(emotion)
+        emotions2 = insert_last(list=emotions2, new_item=emotion)
+        final_emotion2 = most_frequent(emotions2)
 
-        if len(emotions2) >= max_emo:
-            final_emotion = most_frequent(emotions2)
-            emotions2 = []
-
-        display_emotion(img2, emotion=final_emotion, face=face, color=color, font=font, font_color=font_color)
+        display_emotion(img2, emotion=final_emotion2, face=face, color=color, font=font, font_color=font_color)
 
         # Display grey face on bottom left
         face_display = cv2.cvtColor(face_grey, cv2.COLOR_GRAY2BGR)

@@ -14,4 +14,5 @@ if crop_height>res_cam_height:
 crop_dim = (crop_height, crop_width)
 center = (int(res_cam_height*0.5), res_cam_width//2)       # Crop Center // Adjust height
 
+max_emo = 50        # Number of emotion to smooth
 
