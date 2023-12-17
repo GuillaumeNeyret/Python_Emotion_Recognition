@@ -3,13 +3,15 @@ import cv2
 from parameters import *  # Variables importing
 import tensorflow as tf
 from deepface import DeepFace
+from collections import Counter
+import matplotlib.pyplot as plt
+from matplotlib.backends.backend_agg import FigureCanvasAgg as FigureCanvas
 
 def model_info_display(frame, face_name, model_name):
     # Display model info
     cv2.rectangle(frame, (40, 30), (650, 80), (220, 220, 220), -1)
     cv2.putText(frame, "Face detection : " + face_name, (50, 50), font, 0.7, (0, 0, 0), 1, cv2.LINE_AA, False)
     cv2.putText(frame, "Model : " + model_name, (50, 50 + 20), font, 0.7, (0, 0, 0), 1, cv2.LINE_AA, False)
-
 
 def most_frequent(list):
     counter = 0
@@ -30,7 +32,8 @@ def insert_last(list, new_item):
 
 def face_img(img,face):
     (x,y,w,h) = face
-    res = img[y + 5:y + h - 5, x + 20:x + w - 20]   # WHY +5 and +20 ???
+    # res = img[y + 5:y + h - 5, x + 20:x + w - 20]   # WHY +5 and +20 ???
+    res = img[y+0:y + h - 0, x + 0:x + w - 0]   # WHY +5 and +20 ???
     res = cv2.resize(res, (48, 48))
 
     return res
@@ -62,8 +65,7 @@ def emotion_detection(face_grey, model, labels):
     emotion = labels[predictions]
     return emotion
 
-
-def emotion_detection_deepeface(face_grey, model, labels):
+def emotion_detection_deepface(face_grey, model, labels):
     if face_grey.max() > 1:
         face_grey = face_grey / 255.0
 
@@ -77,7 +79,8 @@ def display_emotion(img, emotion, face, color, font, font_color):
     cv2.rectangle(img, (x, y), (x + w // 3, y + 20), color, -1)
     cv2.putText(img, emotion, (x + 10, y + 15), font, 0.5, font_color, 2, cv2.LINE_AA)
 
-cam = cv2.VideoCapture(0, cv2.CAP_DSHOW)
+
+cam = cv2.VideoCapture(1, cv2.CAP_DSHOW)
 # Set Camera Resolutionw
 cam.set(cv2.CAP_PROP_FRAME_WIDTH, res_cam_width)
 cam.set(cv2.CAP_PROP_FRAME_HEIGHT, res_cam_height)
@@ -98,9 +101,13 @@ settings = {
     'minNeighbors': 5,
     'minSize': (100, 100)
 }
+
 labels1 = ['Surprise', 'Neutral', 'Anger', 'Happy', 'Sad']
 labels2 = ['Angry', 'Happy', 'Neutral', 'Sad', 'Surprise']
 labels3 = ['Angry', 'Disgust', 'Fear', 'Happy', 'Sad', 'Surprise', 'Neutral']
+bar_colors1 = ['purple','grey','red','green','blue']
+bar_colors3 = ['red','yellow','black','green','blue','purple','grey']
+
 
 Keras_model1 = 'network-5Labels.h5'
 Keras_model2 = 'Emotion_little_vgg.h5'
@@ -142,6 +149,19 @@ while True:
 
         display_emotion(img1,emotion=final_emotion1,face=face,color=color,font=font,font_color=font_color)
 
+
+
+        # # Create & Display Histogram
+        # counter = Counter(emotions1)
+        # emotions_counts1 = [counter[i] for i in labels1]  # Sort counter values as the labels order
+        # plt.figure(figsize=(10, 6))
+        # plt.bar(labels1, emotions_counts1, color=bar_colors1)
+        # figure_canvas1 = FigureCanvas(plt.gcf())
+        # figure_canvas1.draw()
+        # histogram_img1 = np.array(figure_canvas1.renderer.buffer_rgba())
+        # histogram_img1 = cv2.cvtColor(histogram_img1, cv2.COLOR_RGBA2BGR)
+
+
         # Display grey face on bottom left
         face_display = cv2.cvtColor(face_grey, cv2.COLOR_GRAY2BGR)
         face_display = cv2.resize(face_display,(150,150))
@@ -156,7 +176,7 @@ while True:
     face = face_detection(frame=img2, face_detection=face_detection2, face_settings=settings)
     if face.size != 0:
         face_grey = face_img(img=grey, face=face)
-        emotion = emotion_detection_deepeface(face_grey=face_grey, model=model2, labels=labels3)
+        emotion = emotion_detection_deepface(face_grey=face_grey, model=model2, labels=labels3)
         draw_rect(frame=img2, face=face, color=color, thickness=2)
         emotions2 = insert_last(list=emotions2, new_item=emotion)
         final_emotion2 = most_frequent(emotions2)
@@ -178,6 +198,28 @@ while True:
     int(center_bg[1] - img1.shape[1] / 2):int(center_bg[1] + img1.shape[1] / 2)] = img1
     background2[int(center_bg[0] - img2.shape[0] / 2): int(center_bg[0] + img2.shape[0] / 2),
     int(center_bg[1] - img2.shape[1] / 2):int(center_bg[1] + img2.shape[1] / 2)] = img2
+
+    # Create & Display Histogram
+    counter1 = Counter(emotions1)
+    emotions_counts1 = [counter1[i] for i in labels1]  # Sort counter values as the labels order
+    plt.figure(figsize=(10, 6))
+    plt.bar(labels1, emotions_counts1, color=bar_colors1)
+    figure_canvas1 = FigureCanvas(plt.gcf())
+    figure_canvas1.draw()
+    histogram_img1 = np.array(figure_canvas1.renderer.buffer_rgba())
+    histogram_img1 = cv2.cvtColor(histogram_img1, cv2.COLOR_RGBA2BGR)
+    background1[0:histogram_img1.shape[0], 0:histogram_img1.shape[1]] = histogram_img1
+
+    counter2 = Counter(emotions2)
+    emotions_counts2 = [counter2[i] for i in labels3]  # Sort counter values as the labels order
+    plt.figure(figsize=(10, 6))
+    plt.bar(labels3, emotions_counts2, color=bar_colors3)
+    figure_canvas2 = FigureCanvas(plt.gcf())
+    figure_canvas2.draw()
+    histogram_img2 = np.array(figure_canvas2.renderer.buffer_rgba())
+    histogram_img2 = cv2.cvtColor(histogram_img2, cv2.COLOR_RGBA2BGR)
+    background2[0:histogram_img2.shape[0], 0:histogram_img2.shape[1]] = histogram_img2
+
 
     # The two background one on the other
     Grid = np.concatenate((background1, background2), axis=0)
