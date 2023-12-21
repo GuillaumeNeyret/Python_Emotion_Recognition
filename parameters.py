@@ -2,8 +2,8 @@
 import pyautogui
 
 # Variables
-res_cam_height = 720   # 2160 for 4K Cam
-res_cam_width = 1280    # 3840 for 4K Cam
+res_cam_height = 1080   # 2160 for 4K Cam
+res_cam_width = 1920    # 3840 for 4K Cam
 
 window_width, window_height = pyautogui.size()
 
@@ -19,5 +19,5 @@ crop_width = min(window_width,res_cam_width)        # Minimum to adjust if cam r
 crop_dim = (crop_height, crop_width)
 center = (int(res_cam_height*0.5), res_cam_width//2)       # Crop Center // Adjust height
 
-max_emo = 30        # Number of emotion to smooth
+max_emo = 100        # Number of emotion to smooth
 
