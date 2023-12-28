@@ -6,10 +6,10 @@ from deepface import DeepFace
 from collections import Counter
 import time
 
-def model_info_display(frame, face_name, model_name):
+def model_info_display(frame, cascade_name, model_name):
     # Display model info
     cv2.rectangle(frame, (40, 30), (650, 80), (220, 220, 220), -1)
-    cv2.putText(frame, "Face detection : " + face_name, (50, 50), font, 0.7, (0, 0, 0), 1, cv2.LINE_AA, False)
+    cv2.putText(frame, "Face detection : " + cascade_name, (50, 50), font, 0.7, (0, 0, 0), 1, cv2.LINE_AA, False)
     cv2.putText(frame, "Model : " + model_name, (50, 50 + 20), font, 0.7, (0, 0, 0), 1, cv2.LINE_AA, False)
 
 
@@ -17,7 +17,6 @@ def most_frequent(list):
     counter = Counter(list)
 
     return counter.most_common(1)[0][0]
-
 
 def insert_last(list, new_item):
     list = list[1:]
@@ -32,8 +31,8 @@ def face_img(img,face):
 
     return res
 
-def face_detection(grey_frame, face_detection, face_settings):
-    faces = face_detection.detectMultiScale(grey_frame, **face_settings)
+def face_detection(grey_frame, cascade, face_settings):
+    faces = cascade.detectMultiScale(grey_frame, **face_settings)
     selected_face = np.array([])
 
     # Face selection
@@ -96,12 +95,11 @@ cv2.setWindowProperty('Emotion Detection', cv2.WND_PROP_FULLSCREEN, cv2.WINDOW_F
 
 # Face detection settings
 'data/Facial_expression_models/pre_trained_models/facial_expression_model_weights'
-face_model1 = 'haar_cascade_face_detection.xml'
+cascade1_ref = 'haar_cascade_face_detection.xml'
 # face_model2 = 'haarcascade_frontalface_default.xml'
-face_model2 = face_model1
-face_detection1 = cv2.CascadeClassifier(face_model1)
-face_detection2 = cv2.CascadeClassifier(face_model2)
-
+cascade2_ref = cascade1_ref
+cascade1 = cv2.CascadeClassifier(cascade1_ref)
+cascade2 = cv2.CascadeClassifier(cascade2_ref)
 
 settings = {
     'scaleFactor': 1.3,
@@ -113,6 +111,7 @@ labels1 = ['Surprise', 'Neutral', 'Angry', 'Happy', 'Sad']
 labels2 = ['Angry', 'Happy', 'Neutral', 'Sad', 'Surprise']
 labels3 = ['Angry', 'Disgust', 'Fear', 'Happy', 'Sad', 'Surprise', 'Neutral']
 
+# Histogram UI
 bgr_colors = {
     'purple': (128, 0, 128),
     'blue': (255, 0, 0),
@@ -123,7 +122,6 @@ bgr_colors = {
     'grey': (128, 128, 128),
     'black': (0, 0, 0)
 }
-
 Colors_emotions = {
     'Surprise': bgr_colors['purple'],
     'Neutral':bgr_colors['grey'],
@@ -133,8 +131,9 @@ Colors_emotions = {
     'Disgust':bgr_colors['yellow'],
     'Fear':bgr_colors['orange']
 }
+histo_scale = 0.5
 
-
+# Emotion Recognition models
 Keras_model1 = 'network-5Labels.h5'
 Keras_model2 = 'Emotion_little_vgg.h5'
 model1 = tf.keras.models.load_model(Keras_model1)
@@ -144,16 +143,17 @@ model2 = DeepFace.build_model("Emotion")
 toto = "data/Facial_expression_models/pre_trained_models/network-5Labels.h5"
 model_keras_deep = tf.keras.models.load_model(toto)
 
+# Emotions buffer
 emotions1 = ['Neutral']*max_emo
 emotions2 = emotions1
+final_emotion1 = ""
+final_emotion2 = ""
 
+# Font Display Settings
 font = cv2.FONT_HERSHEY_SIMPLEX
 color = (245, 135, 66)
 font_color = (255,255,255)
-histo_scale = 0.5
 
-final_emotion1 = ""
-final_emotion2 = ""
 
 prev_frame_time = 0
 
@@ -165,6 +165,7 @@ while True:
     # Crop to fit
     cropped = frame[center[0] - (crop_dim[0]) // 2: center[0] + (crop_dim[0]) // 2,
               center[1] - (crop_dim[1]) // 2: center[1] + (crop_dim[1]) // 2]
+    # print(cropped.shape)
 
     grey = cv2.cvtColor(cropped, cv2.COLOR_RGB2GRAY)
 
@@ -174,16 +175,16 @@ while True:
     label = labels1
     model_name = 'Keras' + Keras_model1
     model = model_keras_deep
-    face_model = face_model1
-    cascade = face_detection1
+    cascade_ref = cascade1_ref
+    cascade = cascade1
     img = img1
 
 
     # Display model info
-    model_info_display(img, face_model, model_name=model_name)
+    model_info_display(img, cascade_name=cascade_ref, model_name=model_name)
 
     # Face & Emotion detection
-    face = face_detection(grey_frame=grey,face_detection=cascade,face_settings=settings)
+    face = face_detection(grey_frame=grey,cascade=cascade,face_settings=settings)
     if face.size != 0:
         face_grey=face_img(img=grey,face=face)
         emotion = emotion_detection(face_grey=face_grey, model=model, labels=label)
@@ -208,15 +209,15 @@ while True:
     label = labels3
     model_name = 'Deepface facial_expression_model_weights.h5'
     model = model2
-    face_model = face_model2
-    cascade = face_detection2
+    cascade_ref = cascade2_ref
+    cascade = cascade2
     img = img2
 
     # Display model info
-    model_info_display(img, face_model, model_name=model_name)
+    model_info_display(img, cascade_name=cascade_ref, model_name=model_name)
 
     # Face & Emotion detection
-    face = face_detection(grey_frame=grey,face_detection=cascade,face_settings=settings)
+    face = face_detection(grey_frame=grey,cascade=cascade,face_settings=settings)
     if face.size != 0:
         face_grey = face_img(img=grey, face=face)
         emotion = emotion_detection_deepface(face_grey=face_grey, model=model, labels=label)
@@ -224,7 +225,7 @@ while True:
         emotions2 = insert_last(list=emotions2, new_item=emotion)
         final_emotion2 = most_frequent(emotions2)
 
-        display_emotion(img, emotion=final_emotion1, face=face, color=color, font=font, font_color=font_color)
+        display_emotion(img, emotion=final_emotion2, face=face, color=color, font=font, font_color=font_color)
 
         # Display grey face on bottom left
         face_display = cv2.cvtColor(face_grey, cv2.COLOR_GRAY2BGR)
