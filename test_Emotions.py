@@ -94,12 +94,11 @@ cv2.namedWindow('Emotion Detection', cv2.WND_PROP_FULLSCREEN)
 cv2.setWindowProperty('Emotion Detection', cv2.WND_PROP_FULLSCREEN, cv2.WINDOW_FULLSCREEN)
 
 # Face detection settings
-'data/Facial_expression_models/pre_trained_models/facial_expression_model_weights'
+detector_path = 'data/OpenCV/haarcascades/'
 cascade1_ref = 'haar_cascade_face_detection.xml'
-# face_model2 = 'haarcascade_frontalface_default.xml'
 cascade2_ref = cascade1_ref
-cascade1 = cv2.CascadeClassifier(cascade1_ref)
-cascade2 = cv2.CascadeClassifier(cascade2_ref)
+cascade1 = cv2.CascadeClassifier(detector_path+cascade1_ref)
+cascade2 = cv2.CascadeClassifier(detector_path+cascade2_ref)
 
 settings = {
     'scaleFactor': 1.3,
@@ -134,10 +133,11 @@ Colors_emotions = {
 histo_scale = 0.5
 
 # Emotion Recognition models
+pretrained_model_path = 'data/Facial_expression_models/pre_trained_models/'
 Keras_model1 = 'network-5Labels.h5'
 Keras_model2 = 'Emotion_little_vgg.h5'
-model1 = tf.keras.models.load_model(Keras_model1)
-model2 = tf.keras.models.load_model(Keras_model2)
+model1 = tf.keras.models.load_model(pretrained_model_path+Keras_model1)
+model2 = tf.keras.models.load_model(pretrained_model_path+Keras_model2)
 model2 = DeepFace.build_model("Emotion")
 
 toto = "data/Facial_expression_models/pre_trained_models/network-5Labels.h5"
@@ -263,8 +263,8 @@ while True:
     cv2.imshow('Emotion Detection', Grid)
     # print("FPS : {}".format(fps))
 
-    # Press 'q' to exit
-    if cv2.waitKey(5) & 0xFF == ord('q'):
+    # Press 'q' or 'Echap" to exit
+    if cv2.waitKey(5) & 0xFF in [ord('q'), 27]:
         break
 
 
